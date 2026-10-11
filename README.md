@@ -8,7 +8,7 @@ it talks to the local `ah` daemon over its REST and SSE endpoints, so tasks
 can be started, watched, replied to and reviewed without leaving the editor.
 
 **Version 0.6.8**, published from [`ide-plugins/nvim`][source] at
-[`2465c25216ac`][commit] in the Agent Harbor monorepo. This repository is
+[`6cdd586a6046`][commit] in the Agent Harbor monorepo. This repository is
 generated — see [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull
 request.
 
@@ -151,6 +151,11 @@ Reports the Neovim version, this plugin's version, whether `ah` is present
 and new enough, whether `ah autocomplete` exists, and the daemon state.
 Include its output in any bug report.
 
+If the plugin is lazy-loaded, `:checkhealth` says "No healthcheck found" until
+it has been loaded — Neovim discovers health modules on `runtimepath`, and a
+plugin manager keeps an unloaded plugin off it. Run any `:AgentHarbor` command
+first, or `:Lazy load agent-harbor.nvim`.
+
 ## Documentation
 
 - `:help agent-harbor` — the full reference, shipped with the plugin
@@ -170,4 +175,4 @@ other is the supported configuration.
 AGPL-3.0-only. See [LICENSE](LICENSE).
 
 [source]: https://github.com/agent-harbor/agent-harbor/tree/main/ide-plugins/nvim
-[commit]: https://github.com/agent-harbor/agent-harbor/commit/2465c25216acb9d8ef3be4d53f11bdce9663c1e7
+[commit]: https://github.com/agent-harbor/agent-harbor/commit/6cdd586a60469f2b19fdefd46058bac05ab100a0

@@ -269,6 +269,15 @@ enough; whether `ah autocomplete` exists; and the daemon connection state.
 A disconnected daemon is a warning, not an error — the plugin starts it on
 demand, so that is the normal state before the first task.
 
+                                          *agent-harbor-health-lazy-loading*
+If the plugin is lazy-loaded, |:checkhealth| reports "No healthcheck found"
+until it has been loaded: Neovim discovers health modules on |'runtimepath'|,
+and a plugin manager keeps an unloaded plugin off it. Run any `:AgentHarbor`
+command first, or with lazy.nvim: >vim
+
+    :Lazy load agent-harbor.nvim
+<
+
 ==============================================================================
 10. VERSIONING                                       *agent-harbor-versioning*
 

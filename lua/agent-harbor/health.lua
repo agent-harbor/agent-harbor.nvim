@@ -157,9 +157,18 @@ local function check_daemon()
   end
   if message:match("^Agent Harbor daemon connected") then
     ok_fn(message)
+  elseif message:match("^Agent Harbor daemon starting") then
+    -- Nothing to advise: something already started it, and the next refresh
+    -- either connects or reports why it could not.
+    warn_fn(message)
+  elseif config.get().daemon.auto_start then
+    warn_fn(message, {
+      "daemon.auto_start is on, so the plugin will start it when first needed.",
+      "If this persists, run `ah daemon serve` by hand to see what it says.",
+    })
   else
-    -- Not an error: the plugin starts the daemon on demand, and a disconnected
-    -- daemon is the normal state before the first task.
+    -- Not an error: a disconnected daemon is the normal state before the first
+    -- task.
     warn_fn(message, { "Run `ah daemon serve`, or set daemon.auto_start = true." })
   end
 end
