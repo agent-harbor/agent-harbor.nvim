@@ -60,17 +60,28 @@ function M.compare(a, b)
 end
 
 --- Does `reported` satisfy this plugin's `ah` floor?
---- Unknown versions return nil ("cannot tell"), not false.
+---
+--- Returns nil for "cannot tell", never false, in two cases: when there is no
+--- version number to read, and when `ah` reports a development build. A build
+--- from a branch carries the version of the last release it was branched past
+--- -- "ah 0.6.5-dev" can be a build of a tree that has everything 0.6.8 has --
+--- so its number says nothing about which surfaces it provides, and calling it
+--- too old would be a guess dressed up as a verdict.
 --- @param reported string|nil
 --- @return boolean|nil satisfied
 --- @return string floor
+--- @return boolean development
 function M.satisfies_ah_min(reported)
   local got = M.parse(reported)
   local want = M.parse(M.ah_min)
   if not got or not want then
-    return nil, M.ah_min
+    return nil, M.ah_min, false
   end
-  return M.compare(got, want) >= 0, M.ah_min
+  local development = reported:match("%-dev") ~= nil or reported:match("%-rc") ~= nil
+  if development and M.compare(got, want) < 0 then
+    return nil, M.ah_min, true
+  end
+  return M.compare(got, want) >= 0, M.ah_min, development
 end
 
 return M

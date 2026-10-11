@@ -8,7 +8,7 @@ it talks to the local `ah` daemon over its REST and SSE endpoints, so tasks
 can be started, watched, replied to and reviewed without leaving the editor.
 
 **Version 0.6.8**, published from [`ide-plugins/nvim`][source] at
-[`9857c39e103e`][commit] in the Agent Harbor monorepo. This repository is
+[`91cb4164d0c9`][commit] in the Agent Harbor monorepo. This repository is
 generated — see [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull
 request.
 
@@ -170,4 +170,4 @@ other is the supported configuration.
 AGPL-3.0-only. See [LICENSE](LICENSE).
 
 [source]: https://github.com/agent-harbor/agent-harbor/tree/main/ide-plugins/nvim
-[commit]: https://github.com/agent-harbor/agent-harbor/commit/9857c39e103e09f95f7af92be4bef4a5a917d369
+[commit]: https://github.com/agent-harbor/agent-harbor/commit/91cb4164d0c9f7d5dedf6043ce4d8273abd64da8

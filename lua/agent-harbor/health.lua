@@ -94,8 +94,17 @@ local function check_ah_binary()
 
   ok_fn(("found %s — %s"):format(vim.fn.exepath(executable), output))
 
-  local satisfied, floor = version.satisfies_ah_min(output)
-  if satisfied == nil then
+  local satisfied, floor, development = version.satisfies_ah_min(output)
+  if satisfied == nil and development then
+    warn_fn(
+      ("%s is a development build, below the required ah %s"):format(output, floor),
+      {
+        "A build from a branch carries the version of the last release behind it,",
+        "so its number cannot say whether it has what this plugin calls.",
+        "The next check is the one that actually answers it.",
+      }
+    )
+  elseif satisfied == nil then
     warn_fn(
       ("cannot read a version number out of %q"):format(output),
       { ("This plugin needs ah %s or newer; check it by hand."):format(floor) }
