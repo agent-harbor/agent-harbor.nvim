@@ -1,0 +1,302 @@
+*agent-harbor.txt*  Agent Harbor integration for Neovim and Vim
+
+Author:   Schelling Point Labs Inc
+License:  AGPL-3.0-only
+Homepage: https://github.com/agent-harbor/agent-harbor.nvim
+
+==============================================================================
+CONTENTS                                               *agent-harbor-contents*
+
+  1. Introduction ................ |agent-harbor-introduction|
+  2. Requirements ................ |agent-harbor-requirements|
+  3. Installation ................ |agent-harbor-installation|
+  4. Setup ....................... |agent-harbor-setup|
+  5. Commands .................... |agent-harbor-commands|
+  6. Task prompt buffers ......... |agent-harbor-task-prompt|
+  7. Configuration ............... |agent-harbor-configuration|
+  8. Statusline .................. |agent-harbor-statusline|
+  9. Health ...................... |agent-harbor-health|
+ 10. Versioning .................. |agent-harbor-versioning|
+ 11. Reporting issues ............ |agent-harbor-issues|
+
+==============================================================================
+1. INTRODUCTION                                    *agent-harbor-introduction*
+
+Agent Harbor runs coding agents in isolated workspaces and records every
+session. This plugin is the editor half of that: it talks to the local
+`ah` daemon over its REST and SSE endpoints, so tasks can be started,
+watched, replied to and reviewed without leaving the editor.
+
+The plugin is a client. It does not bundle an agent, a model or a sandbox —
+all of that lives behind the `ah` binary (|agent-harbor-requirements|).
+
+Two editors are supported from this one repository:
+
+  Neovim    the Lua implementation under `lua/agent-harbor/`, which is what
+            this document describes.
+  Vim 9     a reduced |Vim9| implementation under `autoload/` and `plugin/`,
+            covering the task prompt and the daemon status line.
+
+==============================================================================
+2. REQUIREMENTS                                    *agent-harbor-requirements*
+
+  Neovim 0.10 or newer    the plugin calls |vim.system()|.
+                          Vim 9.0 or newer for the reduced implementation.
+
+  The `ah` CLI on PATH    install it from
+                          https://docs.agent-harbor.com/installation
+                          The minimum version is enforced and reported by
+                          |agent-harbor-health|; see |agent-harbor-versioning|
+                          for what couples the two.
+
+No Lua dependencies. The plugin uses only Neovim's own standard library.
+
+==============================================================================
+3. INSTALLATION                                    *agent-harbor-installation*
+
+The plugin is published to its own repository, `agent-harbor/agent-harbor.nvim`,
+which is a generated mirror of `ide-plugins/nvim/` in the Agent Harbor
+monorepo. Install from the mirror: it is a few tens of kilobytes, whereas the
+monorepo is not something a plugin manager should be cloning.
+
+lazy.nvim (https://github.com/folke/lazy.nvim): >lua
+
+    {
+      "agent-harbor/agent-harbor.nvim",
+      version = "*", -- latest release tag; omit to track the default branch
+      cmd = {
+        "AgentHarbor",
+        "AgentHarborNew",
+        "AgentHarborChanges",
+        "AgentHarborReply",
+      },
+      ft = "agent-harbor-task-prompt",
+      opts = {},
+    }
+<
+Lazy-loading caveat: the `ftdetect/` rule that recognises an `ah` prompt file
+only runs once the plugin is loaded. If you want `ah task` to open its
+scratch file with completion already live in a fresh Neovim, add the file
+patterns as a load event too: >lua
+
+    event = {
+      "BufReadPre *.ahtask",
+      "BufReadPre *.ahplan",
+    },
+<
+packer.nvim (https://github.com/wbthomason/packer.nvim): >lua
+
+    use({
+      "agent-harbor/agent-harbor.nvim",
+      config = function()
+        require("agent-harbor").setup({})
+      end,
+    })
+<
+vim-plug (https://github.com/junegunn/vim-plug): >vim
+
+    Plug 'agent-harbor/agent-harbor.nvim'
+<
+rocks.nvim (https://github.com/nvim-neorocks/rocks.nvim), from the rockspec
+the mirror ships at its root: >vim
+
+    :Rocks install agent-harbor.nvim
+<
+Nix. The monorepo flake exposes both editor plugins as packages, built from
+the same sources the mirrors are generated from: >
+
+    nix build github:agent-harbor/agent-harbor#agent-harbor-nvim
+<
+In a home-manager configuration: >nix
+
+    programs.neovim.plugins = [
+      inputs.agent-harbor.packages.${pkgs.system}.agent-harbor-nvim
+    ];
+<
+==============================================================================
+4. SETUP                                                  *agent-harbor-setup*
+
+                                                     *agent-harbor.setup()*
+Neovim defines no commands until `setup()` runs. Call it once: >lua
+
+    require("agent-harbor").setup({})
+<
+`setup()` merges the table you pass over the defaults
+(|agent-harbor-configuration|), defines the commands in
+|agent-harbor-commands|, and starts the daemon status monitor.
+
+In Vim 9 there is nothing to call; `plugin/agent_harbor.vim` defines its
+commands on load.
+
+==============================================================================
+5. COMMANDS                                            *agent-harbor-commands*
+
+                                                              *:AgentHarbor*
+:AgentHarbor            Open the task panel.
+
+                                                           *:AgentHarborNew*
+:AgentHarborNew         Open the task entry form, the editor equivalent of
+                        `ah task`.
+
+                                                       *:AgentHarborOpenNew*
+:AgentHarborOpenNew [{workspace}]
+                        Open a new multiplexer window on {workspace}, or on
+                        the current task's workspace.
+
+                                                     *:AgentHarborShareTask*
+:AgentHarborShareTask [{task-id}]
+                        Copy a shareable `agent-harbor://` URI for {task-id},
+                        defaulting to the selected task.
+
+                                                          *:AgentHarborGoto*
+:AgentHarborGoto {uri}  Open an `agent-harbor://` URI.
+
+                                                       *:AgentHarborChanges*
+:AgentHarborChanges     Open the source-control view for the current task.
+
+                                                         *:AgentHarborReply*
+:AgentHarborReply[!] [{text}]
+                        Send {text} to the running agent. With [!], open the
+                        reply overlay instead of prompting on the command
+                        line.
+
+                                                    *:AgentHarborVoiceReply*
+:AgentHarborVoiceReply  Record a reply and send its transcript.
+
+                                                         *:AgentHarborVoice*
+:AgentHarborVoice {mode}
+                        One of `click-to-talk`, `hold-to-talk`, `always-on`,
+                        `disabled` to set the voice mode, or `start`, `stop`,
+                        `finalize` to drive an always-on capture.
+
+                                                        *:AgentHarborDaemon*
+:AgentHarborDaemon [status]
+                        Echo the daemon connection state.
+
+                                                          *:AgentHarborDocs*
+:AgentHarborDocs        Open the online documentation.
+
+==============================================================================
+6. TASK PROMPT BUFFERS                              *agent-harbor-task-prompt*
+
+                                               *agent-harbor-task-prompt-ft*
+`ah task` and `ah plan` can hand the prompt to your `$EDITOR`. They name the
+scratch file so that an editor can recognise it:
+
+    ah-task-prompt-*.ahtask
+    ah-plan-prompt-*.ahplan
+
+Both the basename prefix and the extension have to match, so your own
+`notes.ahtask` is left alone. Matching files get the
+`agent-harbor-task-prompt` filetype, which turns on completion inside the
+prompt:
+
+    `/`   filesystem paths
+    `~`   filesystem paths, from your home directory
+    `@`   workspace files
+
+The candidates come from `ah autocomplete --json`, the same command the
+`ah` dashboard editor uses, so the editor and the dashboard cannot drift
+apart on what a trigger offers. This is the dependency that sets the `ah`
+version floor in |agent-harbor-versioning|.
+
+Write the buffer and quit to submit the prompt; leave it empty to abort,
+exactly as with a commit message.
+
+==============================================================================
+7. CONFIGURATION                                  *agent-harbor-configuration*
+
+                                                       *agent-harbor-config*
+Pass any subset to `setup()`; it is deep-merged over the defaults. The
+groups, with their notable keys:
+
+  daemon        `url`, `pid_file`, `executable` (default `"ah"`),
+                `auto_start`, `poll_interval_ms`, `probe_timeout_ms`,
+                `start_args`.
+  panel         `mode` (`"split"` or `"float"`), `side`, `width`,
+                `refresh_interval_ms`, `history_limit`, `floating`.
+  task_entry    `agent_type`, `agent_version`, `model`, `agent_count`,
+                `working_copy_mode`, `task_executor_engine`,
+                `acp_command_binary`, `acp_command_args`, `llm_provider`,
+                `floating`.
+  reply         `overlay_height`.
+  voice         `mode`, `fixture_wav`, `record_seconds`.
+  workspace     `on_switch_modified` (`"prompt"`, and the floating window
+                geometry).
+  mux           `ah_command`, `nvim_client_command`, `nvim_client_args`,
+                `open_new_mode`.
+  statusline    `icons.connected`, `icons.starting`, `icons.disconnected`.
+  docs          `url`.
+  cross_task_files
+                `"preview"`, `"switch"` or `"new-tab"`.
+
+`lua/agent-harbor/config.lua` is the authority on the full default table.
+
+Example: >lua
+
+    require("agent-harbor").setup({
+      daemon = { auto_start = true },
+      panel = { mode = "float" },
+      task_entry = { agent_type = "claude", model = "sonnet" },
+    })
+<
+==============================================================================
+8. STATUSLINE                                        *agent-harbor-statusline*
+
+                                            *agent-harbor.lualine_component()*
+                                                 *agent-harbor.statusline()*
+For lualine (https://github.com/nvim-lualine/lualine.nvim): >lua
+
+    sections = {
+      lualine_x = { require("agent-harbor").lualine_component() },
+    }
+<
+For the built-in |'statusline'|: >lua
+
+    vim.o.statusline = "%{%v:lua.require('agent-harbor').native_statusline()%}"
+<
+==============================================================================
+9. HEALTH                                                *agent-harbor-health*
+
+                                                   *:checkhealth-agent-harbor*
+>vim
+    :checkhealth agent-harbor
+<
+Reports, in order: the Neovim version against the floor; the plugin version
+(a monorepo checkout says `0.0.0-dev`); whether `ah` is on PATH and new
+enough; whether `ah autocomplete` exists; and the daemon connection state.
+
+A disconnected daemon is a warning, not an error — the plugin starts it on
+demand, so that is the normal state before the first task.
+
+==============================================================================
+10. VERSIONING                                       *agent-harbor-versioning*
+
+The plugin and the `ah` binary are released from one monorepo tag and carry
+the same version number, but they are *installed* separately: the plugin
+through a plugin manager, `ah` through Homebrew, a tarball or Nix. They
+therefore drift, and the plugin declares what it needs rather than assuming:
+
+  `require("agent-harbor.version").version`
+                        the published version, or `0.0.0-dev` in a monorepo
+                        checkout.
+  `require("agent-harbor.version").ah_min`
+                        the oldest `ah` release providing every CLI surface
+                        the plugin calls. Maintained by hand, with the reason
+                        recorded in `lua/agent-harbor/version.lua`.
+
+|agent-harbor-health| is where a mismatch surfaces. Keeping the two within a
+release of each other is the supported configuration.
+
+==============================================================================
+11. REPORTING ISSUES                                     *agent-harbor-issues*
+
+`agent-harbor/agent-harbor.nvim` is generated. Pull requests against it are
+overwritten by the next release, so both issues and changes belong in the
+monorepo, under `ide-plugins/nvim/`:
+
+    https://github.com/agent-harbor/agent-harbor
+
+Include the output of `:checkhealth agent-harbor`.
+
+vim:tw=78:ts=8:noet:ft=help:norl:
