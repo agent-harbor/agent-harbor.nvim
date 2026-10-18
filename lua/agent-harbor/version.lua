@@ -20,7 +20,7 @@
 
 local M = {}
 
-M.version = "0.6.11"
+M.version = "0.6.13"
 M.ah_min = "0.6.8"
 
 --- Is this anything other than a published release? True for a monorepo
