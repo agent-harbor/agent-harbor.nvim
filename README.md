@@ -7,8 +7,8 @@ workspaces and records every session. This plugin is the editor half of that:
 it talks to the local `ah` daemon over its REST and SSE endpoints, so tasks
 can be started, watched, replied to and reviewed without leaving the editor.
 
-**Version 0.6.13**, published from [`ide-plugins/nvim`][source] at
-[`0c7b0623dede`][commit] in the Agent Harbor monorepo. This repository is
+**Version 0.6.14**, published from [`ide-plugins/nvim`][source] at
+[`b9d24fdce545`][commit] in the Agent Harbor monorepo. This repository is
 generated — see [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull
 request.
 
@@ -163,8 +163,8 @@ first, or `:Lazy load agent-harbor.nvim`.
 
 ## Versioning
 
-Releases track the `ah` binary: plugin 0.6.13 is published from the same
-monorepo tag as `ah` 0.6.13. The two are installed separately, though, so
+Releases track the `ah` binary: plugin 0.6.14 is published from the same
+monorepo tag as `ah` 0.6.14. The two are installed separately, though, so
 the plugin declares the oldest `ah` it works with
 (`require("agent-harbor.version").ah_min`, currently **0.6.8**) and
 `:checkhealth` reports a mismatch. Keeping the two within a release of each
@@ -175,4 +175,4 @@ other is the supported configuration.
 AGPL-3.0-only. See [LICENSE](LICENSE).
 
 [source]: https://github.com/agent-harbor/agent-harbor/tree/main/ide-plugins/nvim
-[commit]: https://github.com/agent-harbor/agent-harbor/commit/0c7b0623dede45a43f341725916367d5ca2187a2
+[commit]: https://github.com/agent-harbor/agent-harbor/commit/b9d24fdce545dd22866797c817de4dc3b4f2b01f
