@@ -6,11 +6,11 @@
 
 rockspec_format = "3.0"
 package = "agent-harbor.nvim"
-version = "0.6.14-1"
+version = "0.6.15-1"
 
 source = {
   url = "git+https://github.com/agent-harbor/agent-harbor.nvim",
-  tag = "v0.6.14",
+  tag = "v0.6.15",
 }
 
 description = {
